@@ -7,6 +7,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -16,8 +17,43 @@ import (
 	"github.com/docker/machine/libmachine/log"
 )
 
-// runTerraform executes a Terraform command.
-// command is the name of the command to execute (e.g. plan, apply, output,  destroy, etc)
+// Represents the result of Terraform's "output" command.
+type terraformOutput struct {
+	DataType  string      `json:"type"`
+	Value     interface{} `json:"value"`
+	Sensitive bool        `json:"sensitive"`
+}
+
+// A map of Terraform outputs, keyed by name.
+type terraformOutputs map[string]terraformOutput
+
+// Invoke Terraform's "output" command and parses the results.
+//
+// Returns a map of outputs, keyed by name.
+func (driver *Driver) runTerraformOutput() (success bool, outputs terraformOutputs, err error) {
+	var programOutput string
+	success, programOutput, err = driver.runTerraform("output",
+		"-json",
+	)
+	log.Debug(programOutput)
+
+	outputs = make(terraformOutputs)
+	err = json.Unmarshal(
+		[]byte(programOutput),
+		&outputs,
+	)
+	if err != nil {
+		err = fmt.Errorf("Failed to parse JSON from Terraform output: %s ", err.Error())
+
+		return
+	}
+
+	return
+}
+
+// Invoke Terraform.
+//
+// command is the name of the Terraform command to execute (e.g. plan, apply, output,  destroy, etc)
 // arguments are any other arguments to pass to Terraform
 func (driver *Driver) runTerraform(command string, arguments ...string) (success bool, output string, err error) {
 	err = driver.ensureTerraformExecutableIsResolved()
@@ -44,11 +80,16 @@ func (driver *Driver) runTerraform(command string, arguments ...string) (success
 	terraformCommand = exec.Command(command, args...)
 	terraformCommand.Stdout = &programOutput
 	terraformCommand.Stderr = &programOutput
+	terraformCommand.Dir = driver.ConfigDir // Always run Terraform in the cached configuration directory
 
 	log.Debugf("Executing %s ...", commandLine)
 	err = terraformCommand.Run()
 	if err != nil {
 		err = fmt.Errorf("Execute Terraform: Failed: %s", err.Error())
+
+		output = string(
+			programOutput.Bytes(),
+		)
 
 		return
 	}
@@ -56,6 +97,10 @@ func (driver *Driver) runTerraform(command string, arguments ...string) (success
 	err = terraformCommand.Wait()
 	if err != nil {
 		err = fmt.Errorf("Execute Terraform: Process did not exit cleanly: %s", err.Error())
+
+		output = string(
+			programOutput.Bytes(),
+		)
 
 		return
 	}
@@ -105,9 +150,43 @@ func (driver *Driver) resolveTerraformExecutablePath() error {
 	return nil
 }
 
+// Ensure that the Terraform executable has been resolved.
 func (driver *Driver) ensureTerraformExecutableIsResolved() error {
 	if driver.TerraformExecutablePath == "" {
 		return errors.New("Terraform executable path has not been resolved")
+	}
+
+	return nil
+}
+
+// Get the local directory where the resolved Terraform configuration is cached.
+func (driver *Driver) getConfigDir() (configDir string, err error) {
+	err = driver.ensureConfigDirIsResolved()
+	if err != nil {
+		return
+	}
+
+	configDir = driver.ConfigDir
+
+	return
+}
+
+// Locate and cache the Terraform configuration.
+func (driver *Driver) resolveConfigDir() error {
+	if driver.ConfigDir != "" {
+		return errors.New("Terraform configuration has already been resolved")
+	}
+
+	// TODO: Support other configuration sources besides local directory
+	driver.ConfigDir = driver.ConfigSource
+
+	return nil
+}
+
+// Ensure that the Terraform configuration has been resolved.
+func (driver *Driver) ensureConfigDirIsResolved() error {
+	if driver.ConfigDir == "" {
+		return errors.New("Terraform configuration has not been resolved")
 	}
 
 	return nil

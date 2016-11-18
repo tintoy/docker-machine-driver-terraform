@@ -21,6 +21,9 @@ type Driver struct {
 	// The source path (or URL) of the Terraform configuration.
 	ConfigSource string
 
+	// The path of the directory containing the imported Terraform configuration.
+	ConfigDir string
+
 	// Optional JSON representing additional variables for the Terraform configuration
 	VariablesJSON string
 
