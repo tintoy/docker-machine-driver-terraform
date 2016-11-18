@@ -14,12 +14,17 @@ import (
 )
 
 func (driver *Driver) importConfig() error {
+	terraformer, err := driver.getTerraformer()
+	if err != nil {
+		return err
+	}
+
 	localConfigDir, err := driver.getConfigDir()
 	if err != nil {
 		return err
 	}
 
-	log.Debugf("Importing configuration from '%s' to '%s'...",
+	log.Infof("Importing Terraform configuration from '%s' to '%s'...",
 		driver.ConfigSource,
 		localConfigDir,
 	)
@@ -29,8 +34,20 @@ func (driver *Driver) importConfig() error {
 		return err
 	}
 
-	log.Debugf("Fetching configuration from '%s...'", driver.ConfigSource)
+	log.Debugf("Fetching Terraform configuration from '%s...'", driver.ConfigSource)
 	err = getter.GetAny(localConfigDir, driver.ConfigSource)
+	if err != nil {
+		return err
+	}
+
+	log.Debugf("Fetching Terraform modules (if any)...")
+	err = terraformer.Get()
+	if err != nil {
+		return err
+	}
+
+	log.Infof("Validating Terraform configuration...")
+	err = terraformer.Validate()
 	if err != nil {
 		return err
 	}

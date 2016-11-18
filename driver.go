@@ -7,6 +7,9 @@ package main
 
 import (
 	"errors"
+	"os"
+
+	systemlog "log"
 
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/log"
@@ -111,6 +114,11 @@ func (driver *Driver) SetConfigFromFlags(flags drivers.DriverOptions) error {
 	// Validation
 	if driver.ConfigSource == "" {
 		return errors.New("Required argument: --terraform-config-source")
+	}
+
+	// Enable ALL logging if MACHINE_DEBUG is set
+	if os.Getenv("MACHINE_DEBUG") != "" {
+		systemlog.SetOutput(os.Stderr)
 	}
 
 	return nil

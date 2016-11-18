@@ -51,7 +51,8 @@ func NewWithExecutable(executablePath string, configDir string) (*Terraformer, e
 // command is the name of the Terraform command to execute (e.g. plan, apply, output,  destroy, etc)
 // arguments are any other arguments to pass to Terraform
 func (terraformer *Terraformer) Run(command string, arguments ...string) (success bool, output string, err error) {
-	err = terraformer.ensureExecutableIsResolved()
+	var executablePath string
+	executablePath, err = terraformer.getExecutablePath()
 	if err != nil {
 		return
 	}
@@ -59,7 +60,7 @@ func (terraformer *Terraformer) Run(command string, arguments ...string) (succes
 	args := []string{command}
 	args = append(args, arguments...)
 
-	commandLine := fmt.Sprintf(`"%s" %s`,
+	commandLine := fmt.Sprintf("%s %s",
 		terraformer.ExecutablePath,
 		command,
 	)
@@ -72,26 +73,15 @@ func (terraformer *Terraformer) Run(command string, arguments ...string) (succes
 		terraformCommand *exec.Cmd
 		programOutput    bytes.Buffer
 	)
-	terraformCommand = exec.Command(command, args...)
+	terraformCommand = exec.Command(executablePath, args...)
 	terraformCommand.Stdout = &programOutput
 	terraformCommand.Stderr = &programOutput
 	terraformCommand.Dir = terraformer.ConfigDir // Always run Terraform in the configuration directory
 
-	log.Printf("Executing %s ...", commandLine)
+	log.Printf(`Executing "%s" ...`, commandLine)
 	err = terraformCommand.Run()
 	if err != nil {
-		err = fmt.Errorf("Execute Terraform: Failed: %s", err.Error())
-
-		output = string(
-			programOutput.Bytes(),
-		)
-
-		return
-	}
-
-	err = terraformCommand.Wait()
-	if err != nil {
-		err = fmt.Errorf("Execute Terraform: Process did not exit cleanly: %s", err.Error())
+		err = fmt.Errorf("Execute Terraform: Failed (%s)", err.Error())
 
 		output = string(
 			programOutput.Bytes(),
@@ -126,6 +116,7 @@ func (terraformer *Terraformer) resolveExecutablePath() error {
 	var err error
 	if terraformer.ExecutablePath == "" {
 		log.Printf("Terraform executable location has not been explicitly configured. We will search for it on system PATH.")
+
 		terraformer.ExecutablePath, err = exec.LookPath("terraform")
 		if err != nil {
 			return err

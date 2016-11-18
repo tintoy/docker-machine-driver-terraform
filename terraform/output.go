@@ -17,10 +17,10 @@ type Output struct {
 // Outputs is a map of Terraform outputs, keyed by name.
 type Outputs map[string]Output
 
-// Invoke Terraform's "output" command and parse the results.
+// Output invokes Terraform's "output" command and parse the results.
 //
 // Returns a map of outputs, keyed by name.
-func (terraformer *Terraformer) runTerraformOutput() (success bool, outputs Outputs, err error) {
+func (terraformer *Terraformer) Output() (success bool, outputs Outputs, err error) {
 	var programOutput string
 	success, programOutput, err = terraformer.Run("output",
 		"-json",
