@@ -7,6 +7,7 @@ package main
 
 import (
 	"errors"
+
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/log"
 	"github.com/docker/machine/libmachine/mcnflag"
@@ -17,8 +18,25 @@ import (
 type Driver struct {
 	*drivers.BaseDriver
 
-	// The path (or URL) of the Terraform configuration.
-	ConfigLocation string
+	// The source path (or URL) of the Terraform configuration.
+	ConfigSource string
+
+	// Optional JSON representing additional variables for the Terraform configuration
+	VariablesJSON string
+
+	// An optional file containing the JSON that represents additional variables for the Terraform configuration
+	VariablesJSONFile string
+
+	// Refresh the configuration after applying it
+	RefreshAfterApply bool
+
+	// The full path to the Terraform executable.
+	TerraformExecutablePath string
+
+	// The path to the SSH private key file to use for authentication.
+	//
+	// If not specified, a new key-pair will be generated.
+	SSHKey string
 }
 
 // GetCreateFlags registers the "machine create" flags recognized by this driver, including
@@ -26,10 +44,23 @@ type Driver struct {
 func (driver *Driver) GetCreateFlags() []mcnflag.Flag {
 	return []mcnflag.Flag{
 		mcnflag.StringFlag{
-			EnvVar: "TERRAFORM_CONFIG",
-			Name:   "terraform-config",
-			Usage:  "The path (or URL) of the Terraform configuration",
-			Value:  "",
+			Name:  "terraform-config-source",
+			Usage: "The path (or URL) of the Terraform configuration",
+			Value: "",
+		},
+		mcnflag.StringFlag{
+			Name:  "terraform-variables-json",
+			Usage: "Optional JSON representing additional variables (if any) for the Terraform configuration",
+			Value: "{}",
+		},
+		mcnflag.StringFlag{
+			Name:  "terraform-variables-json-file",
+			Usage: "An optional file containing the JSON that represents additional variables for the Terraform configuration",
+			Value: "",
+		},
+		mcnflag.BoolFlag{
+			Name:  "terraform-refresh",
+			Usage: "Refresh the configuration after applying it",
 		},
 		mcnflag.StringFlag{
 			EnvVar: "TERRAFORM_SSH_USER",
@@ -59,11 +90,14 @@ func (driver *Driver) DriverName() string {
 
 // SetConfigFromFlags assigns and verifies the command-line arguments presented to the driver.
 func (driver *Driver) SetConfigFromFlags(flags drivers.DriverOptions) error {
-	driver.ConfigLocation = flags.String("terraform-config")
+	driver.ConfigSource = flags.String("terraform-config-source")
+	driver.VariablesJSON = flags.String("terraform-variables-json")
+	driver.VariablesJSONFile = flags.String("terraform-variables-json-file")
+	driver.RefreshAfterApply = flags.Bool("terraform-refresh")
 
 	driver.SSHPort = flags.Int("terraform-ssh-port")
 	driver.SSHUser = flags.String("terraform-ssh-user")
-	driver.SSHKeyPath = flags.String("terraform-ssh-key")
+	driver.SSHKey = flags.String("terraform-ssh-key")
 
 	log.Debugf("docker-machine-driver-terraform %s", DriverVersion)
 
@@ -72,13 +106,13 @@ func (driver *Driver) SetConfigFromFlags(flags drivers.DriverOptions) error {
 
 // PreCreateCheck validates the configuration before making any changes.
 func (driver *Driver) PreCreateCheck() error {
-	if driver.ConfigLocation == "" {
+	if driver.ConfigSource == "" {
 		return errors.New("")
 	}
 
 	log.Infof("Will create machine '%s' using Terraform configuration from '%s'.",
 		driver.MachineName,
-		driver.ConfigLocation,
+		driver.ConfigSource,
 	)
 
 	log.Infof("Resolving Terraform configuration...")
