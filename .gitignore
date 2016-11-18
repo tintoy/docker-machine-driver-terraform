@@ -6,6 +6,10 @@
 # Folders
 _obj
 _test
+_bin
+
+# Version info
+version-info.go
 
 # Architecture specific extensions/prefixes
 *.[568vq]
@@ -22,3 +26,6 @@ _testmain.go
 *.exe
 *.test
 *.prof
+
+# Mac
+.DS_Store
