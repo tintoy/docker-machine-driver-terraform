@@ -6,6 +6,7 @@ package main
  */
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"os"
@@ -35,30 +36,35 @@ func (driver *Driver) runTerraform(command string, arguments ...string) (success
 		commandLine += " "
 		commandLine += strings.Join(arguments, " ")
 	}
-	log.Debugf("Executing %s ...", commandLine)
 
-	terraformCommand := exec.Command(command, args...)
-	err = terraformCommand.Start()
+	var (
+		terraformCommand *exec.Cmd
+		programOutput    bytes.Buffer
+	)
+	terraformCommand = exec.Command(command, args...)
+	terraformCommand.Stdout = &programOutput
+	terraformCommand.Stderr = &programOutput
+
+	log.Debugf("Executing %s ...", commandLine)
+	err = terraformCommand.Run()
 	if err != nil {
+		err = fmt.Errorf("Execute Terraform: Failed: %s", err.Error())
+
 		return
 	}
 
 	err = terraformCommand.Wait()
 	if err != nil {
-		err = fmt.Errorf("Terraform status indicates failure: %s", err.Error())
+		err = fmt.Errorf("Execute Terraform: Process did not exit cleanly: %s", err.Error())
 
 		return
 	}
 
 	success = true
 
-	var combinedOutput []byte
-	combinedOutput, err = terraformCommand.CombinedOutput()
-	if err != nil {
-		return
-	}
-
-	output = string(combinedOutput)
+	output = string(
+		programOutput.Bytes(),
+	)
 
 	log.Debugf("Successfully executed %s ...", commandLine)
 
