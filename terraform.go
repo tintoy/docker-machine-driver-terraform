@@ -7,17 +7,68 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 
 	"github.com/docker/machine/libmachine/log"
 )
 
+// runTerraform executes a Terraform command.
+// command is the name of the command to execute (e.g. plan, apply, output,  destroy, etc)
+// arguments are any other arguments to pass to Terraform
+func (driver *Driver) runTerraform(command string, arguments ...string) (success bool, output string, err error) {
+	err = driver.ensureTerraformExecutableIsResolved()
+	if err != nil {
+		return
+	}
+
+	args := []string{command}
+	args = append(args, arguments...)
+
+	commandLine := fmt.Sprintf(`"%s" %s`,
+		driver.TerraformExecutablePath,
+		command,
+	)
+	if len(arguments) > 0 {
+		commandLine += " "
+		commandLine += strings.Join(arguments, " ")
+	}
+	log.Debugf("Executing %s ...", commandLine)
+
+	terraformCommand := exec.Command(command, args...)
+	err = terraformCommand.Start()
+	if err != nil {
+		return
+	}
+
+	err = terraformCommand.Wait()
+	if err != nil {
+		err = fmt.Errorf("Terraform status indicates failure: %s", err.Error())
+
+		return
+	}
+
+	success = true
+
+	var combinedOutput []byte
+	combinedOutput, err = terraformCommand.CombinedOutput()
+	if err != nil {
+		return
+	}
+
+	output = string(combinedOutput)
+
+	log.Debugf("Successfully executed %s ...", commandLine)
+
+	return
+}
+
 // Get the location of the Terraform executable.
 func (driver *Driver) getTerraformExecutablePath() (executablePath string, err error) {
-	if driver.TerraformExecutablePath == "" {
-		err = errors.New("Terraform executable path has not been resolved")
-
+	err = driver.ensureTerraformExecutableIsResolved()
+	if err != nil {
 		return
 	}
 
@@ -44,6 +95,14 @@ func (driver *Driver) resolveTerraformExecutablePath() error {
 	}
 
 	log.Debugf("The driver will use Terraform executable '%s'.", driver.TerraformExecutablePath)
+
+	return nil
+}
+
+func (driver *Driver) ensureTerraformExecutableIsResolved() error {
+	if driver.TerraformExecutablePath == "" {
+		return errors.New("Terraform executable path has not been resolved")
+	}
 
 	return nil
 }
