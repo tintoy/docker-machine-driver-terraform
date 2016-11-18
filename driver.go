@@ -12,6 +12,7 @@ import (
 	"github.com/docker/machine/libmachine/log"
 	"github.com/docker/machine/libmachine/mcnflag"
 	"github.com/docker/machine/libmachine/state"
+	"github.com/tintoy/docker-machine-driver-terraform/terraform"
 )
 
 // Driver is the Docker Machine driver for Terraform.
@@ -40,6 +41,9 @@ type Driver struct {
 	//
 	// If not specified, a new key-pair will be generated.
 	SSHKey string
+
+	// The terraform executor.
+	terraformer *terraform.Terraformer
 }
 
 // GetCreateFlags registers the "machine create" flags recognized by this driver, including
