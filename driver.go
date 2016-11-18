@@ -108,13 +108,18 @@ func (driver *Driver) SetConfigFromFlags(flags drivers.DriverOptions) error {
 
 	log.Debugf("docker-machine-driver-terraform %s", DriverVersion)
 
+	// Validation
+	if driver.ConfigSource == "" {
+		return errors.New("Required argument: --terraform-config-source")
+	}
+
 	return nil
 }
 
 // PreCreateCheck validates the configuration before making any changes.
 func (driver *Driver) PreCreateCheck() error {
 	if driver.ConfigSource == "" {
-		return errors.New("")
+		return errors.New("The source for Terraform configuration has not been specified")
 	}
 
 	log.Infof("Will create machine '%s' using Terraform configuration from '%s'.",
@@ -123,8 +128,14 @@ func (driver *Driver) PreCreateCheck() error {
 	)
 
 	log.Infof("Resolving Terraform configuration...")
-
-	// TODO: Fetch and / or validate configuration as required.
+	err := driver.resolveConfigDir()
+	if err != nil {
+		return err
+	}
+	err = driver.importConfig()
+	if err != nil {
+		return err
+	}
 
 	return nil
 }

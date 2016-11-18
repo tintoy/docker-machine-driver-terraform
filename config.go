@@ -7,30 +7,67 @@ package main
 
 import (
 	"errors"
+	"os"
 
+	"github.com/docker/machine/libmachine/log"
 	"github.com/hashicorp/go-getter"
 )
 
-// Get the local directory where the resolved Terraform configuration is cached.
-func (driver *Driver) getConfigDir() (configDir string, err error) {
-	err = driver.ensureConfigDirIsResolved()
+func (driver *Driver) importConfig() error {
+	localConfigDir, err := driver.getConfigDir()
 	if err != nil {
-		return
+		return err
 	}
 
-	configDir = driver.ConfigDir
+	log.Debugf("Importing configuration from '%s' to '%s'...",
+		driver.ConfigSource,
+		localConfigDir,
+	)
 
-	return
+	driver.ConfigSource, err = getter.Detect(driver.ConfigSource, localConfigDir, getter.Detectors)
+	if err != nil {
+		return err
+	}
+
+	log.Debugf("Fetching configuration from '%s...'", driver.ConfigSource)
+	err = getter.GetAny(localConfigDir, driver.ConfigSource)
+	if err != nil {
+		return err
+	}
+
+	log.Debugf("Import complete.")
+
+	return nil
 }
 
-// Locate and cache the Terraform configuration.
-func (driver *Driver) resolveConfigDir() error {
-	if driver.ConfigDir != "" {
-		return errors.New("Terraform configuration has already been resolved")
+// Get the local directory where the resolved Terraform configuration is cached.
+func (driver *Driver) getConfigDir() (string, error) {
+	err := driver.ensureConfigDirIsResolved()
+	if err != nil {
+		return "", err
 	}
 
-	// TODO: Support other configuration sources besides local directory
-	driver.ConfigDir = driver.ConfigSource
+	return driver.ConfigDir, nil
+}
+
+// Ensure that the local Terraform configuration directory exists.
+func (driver *Driver) resolveConfigDir() error {
+	if driver.ConfigDir != "" {
+		return errors.New("Local Terraform configuration directory has already been resolved")
+	}
+
+	driver.ConfigDir = driver.ResolveStorePath("terraform-config")
+	_, err := os.Stat(driver.ConfigDir)
+	if err != nil {
+		if !os.IsNotExist(err) {
+			return err
+		}
+
+		err = os.MkdirAll(driver.ConfigDir, 0755 /* u=rwx,g=rx,o=rx */)
+		if err != nil {
+			return err
+		}
+	}
 
 	return nil
 }
