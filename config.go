@@ -10,7 +10,7 @@ import (
 	"os"
 
 	"github.com/docker/machine/libmachine/log"
-	"github.com/hashicorp/go-getter"
+	"github.com/tintoy/docker-machine-driver-terraform/fetch"
 )
 
 func (driver *Driver) importConfig() error {
@@ -29,13 +29,13 @@ func (driver *Driver) importConfig() error {
 		localConfigDir,
 	)
 
-	driver.ConfigSource, err = getter.Detect(driver.ConfigSource, localConfigDir, getter.Detectors)
+	driver.ConfigSource, err = fetch.ParseSource(driver.ConfigSource, localConfigDir)
 	if err != nil {
 		return err
 	}
 
 	log.Debugf("Fetching Terraform configuration from '%s...'", driver.ConfigSource)
-	err = getter.GetAny(localConfigDir, driver.ConfigSource)
+	err = fetch.Content(driver.ConfigSource, localConfigDir)
 	if err != nil {
 		return err
 	}
