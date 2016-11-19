@@ -9,7 +9,7 @@ import (
 	"errors"
 	"os"
 
-	systemlog "log"
+	stdlog "log"
 
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/log"
@@ -28,11 +28,11 @@ type Driver struct {
 	// The path of the directory containing the imported Terraform configuration.
 	ConfigDir string
 
-	// Optional JSON representing additional variables for the Terraform configuration
-	VariablesJSON string
+	// Additional variables for the Terraform configuration
+	ConfigVariables terraform.ConfigVariables
 
 	// An optional file containing the JSON that represents additional variables for the Terraform configuration
-	VariablesJSONFile string
+	AdditionalVariablesFile string
 
 	// Refresh the configuration after applying it
 	RefreshAfterApply bool
@@ -59,12 +59,7 @@ func (driver *Driver) GetCreateFlags() []mcnflag.Flag {
 			Value: "",
 		},
 		mcnflag.StringFlag{
-			Name:  "terraform-variables-json",
-			Usage: "Optional JSON representing additional variables (if any) for the Terraform configuration",
-			Value: "{}",
-		},
-		mcnflag.StringFlag{
-			Name:  "terraform-variables-json-file",
+			Name:  "terraform-additional-variables",
 			Usage: "An optional file containing the JSON that represents additional variables for the Terraform configuration",
 			Value: "",
 		},
@@ -100,25 +95,25 @@ func (driver *Driver) DriverName() string {
 
 // SetConfigFromFlags assigns and verifies the command-line arguments presented to the driver.
 func (driver *Driver) SetConfigFromFlags(flags drivers.DriverOptions) error {
+	log.Debugf("docker-machine-driver-terraform %s", DriverVersion)
+
+	// Enable ALL logging if MACHINE_DEBUG is set
+	if os.Getenv("MACHINE_DEBUG") != "" {
+		stdlog.SetOutput(os.Stderr)
+	}
+
 	driver.ConfigSource = flags.String("terraform-config-source")
-	driver.VariablesJSON = flags.String("terraform-variables-json")
-	driver.VariablesJSONFile = flags.String("terraform-variables-json-file")
+	driver.ConfigVariables = make(map[string]interface{})
+	driver.AdditionalVariablesFile = flags.String("terraform-additional-variables")
 	driver.RefreshAfterApply = flags.Bool("terraform-refresh")
 
 	driver.SSHPort = flags.Int("terraform-ssh-port")
 	driver.SSHUser = flags.String("terraform-ssh-user")
 	driver.SSHKey = flags.String("terraform-ssh-key")
 
-	log.Debugf("docker-machine-driver-terraform %s", DriverVersion)
-
 	// Validation
 	if driver.ConfigSource == "" {
 		return errors.New("Required argument: --terraform-config-source")
-	}
-
-	// Enable ALL logging if MACHINE_DEBUG is set
-	if os.Getenv("MACHINE_DEBUG") != "" {
-		systemlog.SetOutput(os.Stderr)
 	}
 
 	return nil
@@ -141,6 +136,19 @@ func (driver *Driver) PreCreateCheck() error {
 		return err
 	}
 	err = driver.importConfig()
+	if err != nil {
+		return err
+	}
+
+	log.Infof("Customising terraform configuration...")
+	driver.ConfigVariables["dm_machine_name"] = driver.MachineName
+	driver.ConfigVariables["dm_ssh_user"] = driver.SSHUser
+	driver.ConfigVariables["dm_ssh_port"] = driver.SSHPort
+	err = driver.readAdditionalVariables()
+	if err != nil {
+		return err
+	}
+	err = driver.writeVariables()
 	if err != nil {
 		return err
 	}
