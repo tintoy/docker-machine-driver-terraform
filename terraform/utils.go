@@ -12,7 +12,7 @@ import (
 // Calls the supplied PipeHandler once for each line encountered.
 func scanProcessPipes(stdioPipe io.ReadCloser, stderrPipe io.ReadCloser, pipeOutput PipeHandler) {
 	go scanPipe(stdioPipe, pipeOutput, "STDOUT")
-	go scanPipe(stdioPipe, pipeOutput, "STDERR")
+	go scanPipe(stderrPipe, pipeOutput, "STDERR")
 }
 
 // Scan a process output pipe, and call the supplied PipeHandler once for each line encountered.
