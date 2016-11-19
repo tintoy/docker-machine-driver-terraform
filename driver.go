@@ -212,7 +212,13 @@ func (driver *Driver) Create() error {
 	}
 	driver.IPAddress = output.Value.(string)
 
+	output, ok = outputs["dm_ssh_user"]
+	if ok {
+		driver.SSHUser = output.Value.(string)
+	}
+
 	log.Infof("Deployed host has IP '%s'.", driver.IPAddress)
+	log.Infof("Deployed host has SSH user '%s'.", driver.SSHUser)
 
 	return nil
 }
