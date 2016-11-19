@@ -47,8 +47,7 @@ Here are some [examples](examples) for several different providers:
 * [Dimension Data CloudControl](examples/ddcloud)
   * [Public IP](examples/ddcloud/public_ip)
   * [Private IP](examples/ddcloud/private_ip)
-* Amazon Web Services (AWS)  
-Still to be implemented
+* [Amazon Web Services (AWS)](examples/aws)
 * Azure  
 Still to be implemented
 

@@ -2,6 +2,11 @@
 
 This example deploys a server with a private IP address only; it needs to be run either while connected to the CloudControl VPN or from a server inside the target network.
 
+Source:
+
+* [Configuration](main.tf)
+* [Additional Variables](additional-variables.json)
+
 ### Prerequisites
 
 * An existing network domain

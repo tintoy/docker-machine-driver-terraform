@@ -4,6 +4,11 @@ This configuration deploys a server and other resources required to expose it vi
 
 An SSH public key is installed on the server, and password authentication is disabled.
 
+Source:
+
+* [Configuration](main.tf)
+* [Additional Variables](additional-variables.json)
+
 ### Prerequisites
 
 * An existing network domain
