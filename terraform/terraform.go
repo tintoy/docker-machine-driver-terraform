@@ -83,7 +83,10 @@ func (terraformer *Terraformer) Run(command string, arguments ...string) (succes
 	log.Debugf(`Executing "%s" in '%s'...`, commandLine, terraformer.ConfigDir)
 	err = terraformCommand.Run()
 	if err != nil {
-		err = fmt.Errorf("Execute Terraform: Failed (%s)", err.Error())
+		err = fmt.Errorf("Execute Terraform [%s]: Failed (%s)",
+			command,
+			err.Error(),
+		)
 
 		output = string(
 			programOutput.Bytes(),
