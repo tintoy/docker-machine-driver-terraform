@@ -7,6 +7,7 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"os"
 
 	stdlog "log"
@@ -54,7 +55,7 @@ type Driver struct {
 func (driver *Driver) GetCreateFlags() []mcnflag.Flag {
 	return []mcnflag.Flag{
 		mcnflag.StringFlag{
-			Name:  "terraform-config-source",
+			Name:  "terraform-config",
 			Usage: "The path (or URL) of the Terraform configuration",
 			Value: "",
 		},
@@ -102,7 +103,7 @@ func (driver *Driver) SetConfigFromFlags(flags drivers.DriverOptions) error {
 		stdlog.SetOutput(os.Stderr)
 	}
 
-	driver.ConfigSource = flags.String("terraform-config-source")
+	driver.ConfigSource = flags.String("terraform-config")
 	driver.ConfigVariables = make(map[string]interface{})
 	driver.AdditionalVariablesFile = flags.String("terraform-additional-variables")
 	driver.RefreshAfterApply = flags.Bool("terraform-refresh")
@@ -113,7 +114,7 @@ func (driver *Driver) SetConfigFromFlags(flags drivers.DriverOptions) error {
 
 	// Validation
 	if driver.ConfigSource == "" {
-		return errors.New("Required argument: --terraform-config-source")
+		return errors.New("Required argument: --terraform-config")
 	}
 
 	return nil
@@ -140,8 +141,24 @@ func (driver *Driver) PreCreateCheck() error {
 		return err
 	}
 
+	if driver.SSHKey != "" {
+		log.Infof("Importing SSH key '%s'...", driver.SSHKey)
+		err = driver.importSSHKey()
+		if err != nil {
+			return err
+		}
+	} else {
+		log.Infof("Generating new SSH key...")
+		err = driver.generateSSHKey()
+		if err != nil {
+			return err
+		}
+	}
+
 	log.Infof("Customising terraform configuration...")
 	driver.ConfigVariables["dm_machine_name"] = driver.MachineName
+	driver.ConfigVariables["dm_ssh_private_key_file"] = driver.SSHKeyPath
+	driver.ConfigVariables["dm_ssh_public_key_file"] = driver.SSHKeyPath + ".pub"
 	driver.ConfigVariables["dm_ssh_user"] = driver.SSHUser
 	driver.ConfigVariables["dm_ssh_port"] = driver.SSHPort
 	err = driver.readAdditionalVariables()
@@ -158,6 +175,25 @@ func (driver *Driver) PreCreateCheck() error {
 
 // Create a new Docker Machine instance on CloudControl.
 func (driver *Driver) Create() error {
+	log.Infof("Applying terraform configuration...")
+	variablesFileName, err := driver.getVariablesFileName()
+	if err != nil {
+		return err
+	}
+
+	terraformer, err := driver.getTerraformer()
+	if err != nil {
+		return err
+	}
+
+	success, programOutput, err := terraformer.Apply(variablesFileName)
+	if err != nil {
+		return err
+	}
+	if !success {
+		return fmt.Errorf("Failed to apply Terraform configuration\nTerraform output:\n%s", programOutput)
+	}
+
 	return errors.New("Create is not yet implemented.")
 }
 

@@ -78,9 +78,9 @@ func (driver *Driver) writeVariables() error {
 		return err
 	}
 
-	log.Debugf("Writing %d Terraform variables from '%s'...",
+	log.Debugf("Writing %d Terraform variables to '%s'...",
 		len(driver.ConfigVariables),
-		driver.AdditionalVariablesFile,
+		variablesFileName,
 	)
 
 	err = driver.ConfigVariables.Write(variablesFileName)

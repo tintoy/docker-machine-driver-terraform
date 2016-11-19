@@ -2,6 +2,16 @@
 
 A driver for Docker Machine that uses Terraform to provision infrastructure.
 
+### Arguments
+
+The driver accepts the following arguments:
+
+* `--terraform-config` (Required) - The path (or URL) of the Terraform configuration to use
+* `--terraform-additional-variables` (Optional) - An optional file containing the JSON that represents additional variables for the Terraform configuration
+* `--terraform-refresh` (Optional) - A flag which, if specified, will cause the driver to refresh the configuration after applying it
+
+### Configuration
+
 The driver can work with a Terraform configuration in any of the following forms:
 
 * A single local .tf file
@@ -27,4 +37,6 @@ Download the [latest release](https://github.com/tintoy/docker-machine-driver-te
 
 ## Building the driver
 
-If you'd rather run from source, simply run `make install` and you're good to go.
+If you'd rather run from source, run `make dev` and then `source ./use-dev-driver.sh`. You're good to go :)
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for more detailed instructionsabout building / modifying the driver.

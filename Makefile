@@ -1,4 +1,5 @@
 VERSION = 0.1
+VERSION_INFO_FILE = version-info.go
 
 default: fmt build test
 
@@ -33,5 +34,8 @@ dist: build
 test: fmt
 	go test -v github.com/tintoy/docker-machine-driver-terraform/...
 
-version:
-	echo "package main\n\n// DriverVersion is the current version of the Terraform driver for Docker Machine.\nconst DriverVersion = \"v${VERSION} (`git rev-parse HEAD`)\"" > ./version-info.go
+version: $(VERSION_INFO_FILE)
+
+$(VERSION_INFO_FILE): Makefile
+	@echo "Update version info: v$(VERSION)."
+	@echo "package main\n\n// DriverVersion is the current version of the Terraform driver for Docker Machine.\nconst DriverVersion = \"v$(VERSION) (`git rev-parse HEAD`)\"" > $(VERSION_INFO_FILE)

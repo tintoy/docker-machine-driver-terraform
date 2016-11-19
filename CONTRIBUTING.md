@@ -54,7 +54,22 @@ Ready to contribute? Here's how to set up `docker-machine-driver-terraform` for 
     2. Make sure your GOPATH environment variable has been set.
     3. Run `go get -u github.com/tintoy/docker-machine-driver-terraform`.
     4. Go to $GOPATH/src/github.com/tintoy/docker-machine-driver-terraform.
-2. Run `make dev` to build the provider, then `make install` to make it available to execute.
+2. Run `make dev` to build the provider
+3. Run `source ./use-dev-driver.sh` to make it available to execute.
+
+### Make targets
+
+There are a couple of make targets that you'll find useful:
+
+* `make fmt` - runs `go fmt`
+* `make dev` - builds the driver for the local machine's operating system and platform
+* `make test` - runs unit tests
+* `make build` - builds the driver for all supported operating systems and platforms
+  * `make build-windows64` - builds the driver for Windows (64-bit)
+  * `make build-linux64` - builds the driver for Linux (64-bit)
+  * `make build-darwin64` - builds the driver for OSX (64-bit)
+* `make dist` - builds and packages the driver for all supported operating systems and platforms
+* `make version` - updates the program version info
 
 ## Pull Request Guidelines
 

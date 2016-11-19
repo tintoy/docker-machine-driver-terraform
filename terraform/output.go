@@ -3,7 +3,8 @@ package terraform
 import (
 	"encoding/json"
 	"fmt"
-	"log"
+
+	"github.com/docker/machine/libmachine/log"
 )
 
 // Output represents an output from Terraform's "output" command.
@@ -25,7 +26,15 @@ func (terraformer *Terraformer) Output() (success bool, outputs Outputs, err err
 	success, programOutput, err = terraformer.Run("output",
 		"-json",
 	)
-	log.Print(programOutput)
+	log.Debugf(programOutput)
+	if err != nil {
+		return
+	}
+	if !success {
+		err = fmt.Errorf("Failed to execute 'terraform output'\n:Terraform output:\n%s", programOutput)
+
+		return
+	}
 
 	outputs = make(Outputs)
 	err = json.Unmarshal(

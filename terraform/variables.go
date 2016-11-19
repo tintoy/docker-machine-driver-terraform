@@ -3,6 +3,7 @@ package terraform
 import (
 	"encoding/json"
 	"io/ioutil"
+	"strconv"
 )
 
 // ConfigVariables represents values for Terraform configuration variables, keyed by name.
@@ -44,7 +45,9 @@ func (variables ConfigVariables) Read(fileName string) error {
 
 // Save variables from the specified file (normally tfvars.json).
 func (variables ConfigVariables) Write(fileName string) error {
-	variablesJSON, err := json.MarshalIndent(variables, "", "  ")
+	normalizedVariables := variables.normalize()
+
+	variablesJSON, err := json.MarshalIndent(normalizedVariables, "", "  ")
 	if err != nil {
 		return err
 	}
@@ -55,4 +58,23 @@ func (variables ConfigVariables) Write(fileName string) error {
 	}
 
 	return nil
+}
+
+// Make a copy of the configuration variables, but with normalised values.
+//
+// For example, numbers are converted to strings.
+func (variables ConfigVariables) normalize() ConfigVariables {
+	normalized := make(ConfigVariables)
+	for variableName, variableValue := range variables {
+		normalizedValue := variableValue
+
+		integerValue, ok := variableValue.(int)
+		if ok {
+			normalizedValue = strconv.Itoa(integerValue)
+		}
+
+		normalized[variableName] = normalizedValue
+	}
+
+	return normalized
 }

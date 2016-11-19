@@ -11,13 +11,11 @@ import (
 func (terraformer *Terraformer) Validate() error {
 	success, programOutput, err := terraformer.Run("validate")
 	log.Print(programOutput)
-
 	if err != nil {
 		return err
 	}
-
 	if !success {
-		return fmt.Errorf("Failed to execute 'terraform get'")
+		return fmt.Errorf("Failed to execute 'terraform validate'\n:Terraform output:\n%s", programOutput)
 	}
 
 	return nil
