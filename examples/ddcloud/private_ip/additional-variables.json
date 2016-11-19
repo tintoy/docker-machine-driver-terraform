@@ -1,0 +1,7 @@
+{
+	"mcp_region": "AU",
+	"networkdomain": "MyDomain",
+	"datacenter": "AU10",
+	"vlan": "MyVLAN",
+	"ssh_bootstrap_password": "5n4u54g3s!!!"
+}
