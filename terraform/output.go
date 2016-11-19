@@ -21,11 +21,12 @@ type Outputs map[string]Output
 // Output invokes Terraform's "output" command and parse the results.
 //
 // Returns a map of outputs, keyed by name.
-func (terraformer *Terraformer) Output() (success bool, outputs Outputs, err error) {
-	var programOutput string
-	success, programOutput, err = terraformer.Run("output",
-		"-json",
+func (terraformer *Terraformer) Output() (outputs Outputs, err error) {
+	var (
+		success       bool
+		programOutput string
 	)
+	success, programOutput, err = terraformer.Run("output", "-json", "-no-color")
 	log.Debugf(programOutput)
 	if err != nil {
 		return

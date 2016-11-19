@@ -1,7 +1,6 @@
 package terraform
 
 import (
-	"bufio"
 	"bytes"
 	"errors"
 	"fmt"
@@ -81,7 +80,7 @@ func (terraformer *Terraformer) Run(command string, arguments ...string) (succes
 	terraformCommand.Stderr = &programOutput
 	terraformCommand.Dir = terraformer.ConfigDir // Always run Terraform in the configuration directory
 
-	log.Debugf(`Executing "%s" ...`, commandLine)
+	log.Debugf(`Executing "%s" in '%s'...`, commandLine, terraformer.ConfigDir)
 	err = terraformCommand.Run()
 	if err != nil {
 		err = fmt.Errorf("Execute Terraform: Failed (%s)", err.Error())
@@ -104,15 +103,27 @@ func (terraformer *Terraformer) Run(command string, arguments ...string) (succes
 	return
 }
 
+// RunStreamed invokes Terraform and streams its output to the Docker Machine log.
+//
+// command is the name of the Terraform command to execute (e.g. plan, apply, output,  destroy, etc)
+// arguments are any other arguments to pass to Terraform
+func (terraformer *Terraformer) RunStreamed(command string, arguments ...string) (success bool, err error) {
+	handler := func(outputLine string) {
+		log.Infof("%s", outputLine)
+	}
+
+	return terraformer.RunStreamedWithHandler(command, handler, arguments...)
+}
+
 // PipeHandler is a function which receives lines of piped output from Terraform as they become available
 type PipeHandler func(string)
 
-// RunPiped invokes Terraform and pipes its output to the specified OutputHandler.
+// RunStreamedWithHandler invokes Terraform and pipes its output to the specified OutputHandler.
 //
 // command is the name of the Terraform command to execute (e.g. plan, apply, output,  destroy, etc)
 // pipeOutput is a function called once for each line of output received
 // arguments are any other arguments to pass to Terraform
-func (terraformer *Terraformer) RunPiped(command string, pipeOutput PipeHandler, arguments ...string) (success bool, err error) {
+func (terraformer *Terraformer) RunStreamedWithHandler(command string, handler PipeHandler, arguments ...string) (success bool, err error) {
 	var executablePath string
 	executablePath, err = terraformer.getExecutablePath()
 	if err != nil {
@@ -133,37 +144,41 @@ func (terraformer *Terraformer) RunPiped(command string, pipeOutput PipeHandler,
 
 	var (
 		terraformCommand *exec.Cmd
-		combinedOutput   io.Reader
-		outputCloser     io.Closer
-		outputScanner    *bufio.Scanner
+		stdoutPipe       io.ReadCloser
+		stderrPipe       io.ReadCloser
 	)
 	terraformCommand = exec.Command(executablePath, args...)
-	combinedOutput, outputCloser, err = pipeCombinedOutput(terraformCommand)
+	terraformCommand.Dir = terraformer.ConfigDir // Always run Terraform in the configuration directory
+
+	stdoutPipe, err = terraformCommand.StdoutPipe()
 	if err != nil {
 		return
 	}
+	defer stdoutPipe.Close()
 
-	terraformCommand.Dir = terraformer.ConfigDir // Always run Terraform in the configuration directory
+	stderrPipe, err = terraformCommand.StderrPipe()
+	if err != nil {
+		return
+	}
+	defer stderrPipe.Close()
 
 	log.Debugf(`Executing "%s" ...`, commandLine)
 	err = terraformCommand.Start()
 	if err != nil {
 		err = fmt.Errorf("Execute Terraform: Failed to start: %s", err.Error())
+
+		return
 	}
 
 	// Pipe output to the caller.
-	outputScanner = bufio.NewScanner(combinedOutput)
-	go func() {
-		defer outputCloser.Close()
+	scanProcessPipes(stdoutPipe, stderrPipe, handler)
 
-		for outputScanner.Scan() {
-			pipeOutput(outputScanner.Text())
-		}
-	}()
-
+	// Pipes will be auto-closed once process is terminated.
 	err = terraformCommand.Wait()
 	if err != nil {
 		err = fmt.Errorf("Execute Terraform: Did not exit cleanly: %s", err.Error())
+
+		return
 	}
 
 	if err != nil {

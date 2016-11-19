@@ -2,28 +2,19 @@ package terraform
 
 import (
 	"errors"
-	"fmt"
-
-	"github.com/docker/machine/libmachine/log"
 )
 
 // Apply invokes Terraform's "apply" command.
-func (terraformer *Terraformer) Apply(variablesFilePath string) (success bool, programOutput string, err error) {
+func (terraformer *Terraformer) Apply(withVariablesFile bool) (success bool, err error) {
 	args := []string{
 		"-input=false", // non-interactive
 		"-no-color",
 	}
-	if variablesFilePath != "" {
-		args = append(args,
-			fmt.Sprintf("-var-file=%s", variablesFilePath),
-		)
+	if withVariablesFile {
+		args = append(args, "-var-file=tfvars.json")
 	}
 
-	pipeHandler := func(outputLine string) {
-		log.Debug(outputLine)
-	}
-
-	success, err = terraformer.RunPiped("apply", pipeHandler, args...)
+	success, err = terraformer.RunStreamed("apply", args...)
 	if err != nil {
 		return
 	}

@@ -8,6 +8,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"net"
 	"os"
 
 	stdlog "log"
@@ -126,13 +127,19 @@ func (driver *Driver) PreCreateCheck() error {
 		return errors.New("The source for Terraform configuration has not been specified")
 	}
 
+	log.Infof("Auto-detecting client's public (external) IP address...")
+	clientIP, err := getClientPublicIPv4Address()
+	if err != nil {
+		return err
+	}
+
 	log.Infof("Will create machine '%s' using Terraform configuration from '%s'.",
 		driver.MachineName,
 		driver.ConfigSource,
 	)
 
 	log.Infof("Resolving Terraform configuration...")
-	err := driver.resolveConfigDir()
+	err = driver.resolveConfigDir()
 	if err != nil {
 		return err
 	}
@@ -156,6 +163,7 @@ func (driver *Driver) PreCreateCheck() error {
 	}
 
 	log.Infof("Customising terraform configuration...")
+	driver.ConfigVariables["dm_client_ip"] = clientIP
 	driver.ConfigVariables["dm_machine_name"] = driver.MachineName
 	driver.ConfigVariables["dm_ssh_private_key_file"] = driver.SSHKeyPath
 	driver.ConfigVariables["dm_ssh_public_key_file"] = driver.SSHKeyPath + ".pub"
@@ -176,40 +184,73 @@ func (driver *Driver) PreCreateCheck() error {
 // Create a new Docker Machine instance on CloudControl.
 func (driver *Driver) Create() error {
 	log.Infof("Applying terraform configuration...")
-	variablesFileName, err := driver.getVariablesFileName()
-	if err != nil {
-		return err
-	}
 
 	terraformer, err := driver.getTerraformer()
 	if err != nil {
 		return err
 	}
 
-	success, programOutput, err := terraformer.Apply(variablesFileName)
+	success, err := terraformer.Apply(true /* withVariablesFile */)
 	if err != nil {
 		return err
 	}
 	if !success {
-		return fmt.Errorf("Failed to apply Terraform configuration\nTerraform output:\n%s", programOutput)
+		return errors.New("Failed to apply Terraform configuration")
 	}
 
-	return errors.New("Create is not yet implemented.")
+	outputs, err := terraformer.Output()
+	if err != nil {
+		return err
+	}
+	if !success {
+		return fmt.Errorf("Failed to obtain Terraform outputs")
+	}
+
+	output, ok := outputs["dm_machine_ip"]
+	if !ok {
+		return fmt.Errorf("Configuration does not declare required output 'dm_machine_ip'")
+	}
+	driver.IPAddress = output.Value.(string)
+
+	log.Infof("Deployed host has IP '%s'.", driver.IPAddress)
+
+	return nil
 }
 
 // GetState retrieves the status of the target Docker Machine instance in CloudControl.
 func (driver *Driver) GetState() (state.State, error) {
-	return state.None, errors.New("GetState is not yet implemented.")
+	return state.Running, nil
 }
 
 // GetURL returns docker daemon URL on the target machine
 func (driver *Driver) GetURL() (string, error) {
-	return "", errors.New("GetURL is not yet implemented.")
+	if driver.IPAddress == "" {
+		return "", nil
+	}
+
+	url := fmt.Sprintf("tcp://%s", net.JoinHostPort(driver.IPAddress, "2376"))
+
+	return url, nil
 }
 
 // Remove deletes the target machine.
 func (driver *Driver) Remove() error {
-	return errors.New("Remove is not yet implemented.")
+	log.Infof("Destroying terraform configuration...")
+
+	terraformer, err := driver.getTerraformer()
+	if err != nil {
+		return err
+	}
+
+	success, err := terraformer.Destroy(true /* withVariablesFile */)
+	if err != nil {
+		return err
+	}
+	if !success {
+		return errors.New("Failed to destroy Terraform configuration")
+	}
+
+	return nil
 }
 
 // Start the target machine.

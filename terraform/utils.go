@@ -1,46 +1,35 @@
 package terraform
 
 import (
+	"bufio"
 	"io"
-	"os/exec"
+
+	"github.com/docker/machine/libmachine/log"
 )
 
-type multiCloser struct {
-	innerClosers []io.Closer
+// Scan STDOUT and STDERR pipes for a process.
+//
+// Calls the supplied PipeHandler once for each line encountered.
+func scanProcessPipes(stdioPipe io.ReadCloser, stderrPipe io.ReadCloser, pipeOutput PipeHandler) {
+	go scanPipe(stdioPipe, pipeOutput, "STDOUT")
+	go scanPipe(stdioPipe, pipeOutput, "STDERR")
 }
 
-func (closer *multiCloser) Close() error {
-	for _, innerCloser := range closer.innerClosers {
-		err := innerCloser.Close()
-		if err != nil {
-			return err
-		}
+// Scan a process output pipe, and call the supplied PipeHandler once for each line encountered.
+func scanPipe(pipe io.ReadCloser, pipeOutput PipeHandler, pipeName string) {
+	lineScanner := bufio.NewScanner(pipe)
+	for lineScanner.Scan() {
+		line := lineScanner.Text()
+		pipeOutput(line)
 	}
 
-	return nil
-}
-
-func newMultiCloser(innerClosers ...io.Closer) *multiCloser {
-	return &multiCloser{
-		innerClosers: innerClosers,
-	}
-}
-
-func pipeCombinedOutput(command *exec.Cmd) (combinedOutput io.Reader, outputCloser io.Closer, err error) {
-	var stdoutPipe, stderrPipe io.ReadCloser
-
-	stdoutPipe, err = command.StdoutPipe()
-	if err != nil {
-		return
+	scanError := lineScanner.Err()
+	if scanError != nil {
+		log.Errorf("Error scanning pipe %s: %s",
+			pipeName,
+			scanError.Error(),
+		)
 	}
 
-	stderrPipe, err = command.StderrPipe()
-	if err != nil {
-		return
-	}
-
-	combinedOutput = io.MultiReader(stderrPipe, stdoutPipe)
-	outputCloser = newMultiCloser(stdoutPipe, stderrPipe)
-
-	return
+	pipe.Close()
 }
