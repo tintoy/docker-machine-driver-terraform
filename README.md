@@ -43,7 +43,7 @@ If specified this overrides the variable of the same name that was passed in
 
 Here are some [examples](examples) for several different providers:
 
-* [Digital Ocean](examples/digitalocean)
+* [Digital Ocean](examples/digital_ocean)
 * [Dimension Data CloudControl](examples/ddcloud)
   * [Public IP](examples/ddcloud/public_ip)
   * [Private IP](examples/ddcloud/private_ip)
