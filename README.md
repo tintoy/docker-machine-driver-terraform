@@ -1,4 +1,4 @@
-# docker-machine-driver-terraform
+# Terraform driver for Docker Machine
 
 Do you use Docker Machine?
 Do you sometimes wish you had a little more control over the infrastructure it creates?
