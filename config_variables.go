@@ -61,7 +61,7 @@ func (driver *Driver) readAdditionalVariables() error {
 		if err != nil {
 			return err
 		}
-		variablesFileName = path.Join(workingDirectory, driver.AdditionalVariablesFile)
+		variablesFileName = path.Join(workingDirectory, variablesFileName)
 	}
 
 	log.Debugf("Reading additional Terraform variables from '%s'...", variablesFileName)
