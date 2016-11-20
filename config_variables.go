@@ -55,15 +55,22 @@ func (driver *Driver) readAdditionalVariables() error {
 		return nil // Nothing to do
 	}
 
-	log.Debugf("Reading additional Terraform variables from '%s'...",
-		driver.AdditionalVariablesFile,
-	)
+	variablesFileName := driver.AdditionalVariablesFile
+	if !path.IsAbs(variablesFileName) {
+		workingDirectory, err := os.Getwd()
+		if err != nil {
+			return err
+		}
+		variablesFileName = path.Join(workingDirectory, driver.AdditionalVariablesFile)
+	}
+
+	log.Debugf("Reading additional Terraform variables from '%s'...", variablesFileName)
 
 	// This operation is additive (preserves exising variables).
-	err := driver.ConfigVariables.Read(driver.AdditionalVariablesFile)
+	err := driver.ConfigVariables.Read(variablesFileName)
 	if err != nil {
 		return fmt.Errorf("Unable to read additional variables from '%s': %s",
-			driver.AdditionalVariablesFile,
+			variablesFileName,
 			err.Error(),
 		)
 	}

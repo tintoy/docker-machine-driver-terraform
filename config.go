@@ -7,7 +7,6 @@ package main
 
 import (
 	"errors"
-	"os"
 
 	"github.com/docker/machine/libmachine/log"
 	"github.com/tintoy/docker-machine-driver-terraform/fetch"
@@ -19,6 +18,7 @@ func (driver *Driver) importConfig() error {
 		return err
 	}
 
+	// Directory won't exist until fetch (go-getter) creates it.
 	localConfigDir, err := driver.getConfigDir()
 	if err != nil {
 		return err
@@ -28,8 +28,7 @@ func (driver *Driver) importConfig() error {
 		driver.ConfigSource,
 		localConfigDir,
 	)
-
-	driver.ConfigSource, err = fetch.ParseSource(driver.ConfigSource, localConfigDir)
+	driver.ConfigSource, err = fetch.ParseSource(driver.ConfigSource)
 	if err != nil {
 		return err
 	}
@@ -73,18 +72,8 @@ func (driver *Driver) resolveConfigDir() error {
 		return errors.New("Local Terraform configuration directory has already been resolved")
 	}
 
+	// We don't auto-create this directory because go-getter wants to do it for us.
 	driver.ConfigDir = driver.ResolveStorePath("terraform-config")
-	_, err := os.Stat(driver.ConfigDir)
-	if err != nil {
-		if !os.IsNotExist(err) {
-			return err
-		}
-
-		err = os.MkdirAll(driver.ConfigDir, 0755 /* u=rwx,g=rx,o=rx */)
-		if err != nil {
-			return err
-		}
-	}
 
 	return nil
 }

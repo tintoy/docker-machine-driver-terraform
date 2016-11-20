@@ -183,7 +183,7 @@ func (driver *Driver) PreCreateCheck() error {
 
 // Create a new Docker Machine instance on CloudControl.
 func (driver *Driver) Create() error {
-	log.Infof("Applying terraform configuration...")
+	log.Infof("Applying Terraform configuration...")
 
 	terraformer, err := driver.getTerraformer()
 	if err != nil {
@@ -196,6 +196,14 @@ func (driver *Driver) Create() error {
 	}
 	if !success {
 		return errors.New("Failed to apply Terraform configuration")
+	}
+
+	if driver.RefreshAfterApply {
+		log.Infof("Refreshing Terraform configuration state...")
+		err = terraformer.Refresh()
+		if err != nil {
+			return err
+		}
 	}
 
 	outputs, err := terraformer.Output()
