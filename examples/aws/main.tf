@@ -54,7 +54,7 @@ resource "aws_security_group" "docker_machine" {
   name          = "dm_${replace(var.dm_machine_name, "-", "_")}"
   description   = "Docker Machine (allow SSH and Docker API)"
 
-  # SSH
+  # SSH (inbound)
   ingress {
       from_port     = 22
       to_port       = 22
@@ -62,12 +62,20 @@ resource "aws_security_group" "docker_machine" {
       cidr_blocks   = ["${var.dm_client_ip}/0"]
   }
 
-  # Docker
+  # Docker (inbound)
   ingress {
       from_port     = 2376
       to_port       = 2376
       protocol      = "tcp"
       cidr_blocks   = ["${var.dm_client_ip}/0"]
+  }
+
+  # All traffic (outbound)
+  egress {
+      from_port     = 0
+      to_port       = 0
+      protocol      = "-1"
+      cidr_blocks   = ["0.0.0.0/0"]
   }
 }
 
