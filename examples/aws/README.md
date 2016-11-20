@@ -1,6 +1,6 @@
 ## aws provider
 
-This example deploys a server with a private IP address only; it needs to be run either while connected to the CloudControl VPN or from a server inside the target network.
+This example deploys an EC2 instance and a security group to permit inbound SSH + Docker API.
 
 Source:
 
@@ -9,33 +9,29 @@ Source:
 
 ### Prerequisites
 
-* An existing network domain
-* An existing VLAN
+None.
 
 ### Additional variables
 
 * `region` - The AWS region code that identifies the API end-point to use
-* `networkdomain` - The name of the target network domain
-* `datacenter` - The name of the datacenter where the network domain is hosted
-* `vlan` - The name of the target VLAN within the network domain
-* `ssh_bootstrap_password` - The temporary password used to bootstrap SSH authentication
 
 ### Using this example
 
 First, update [additional-variables.json](additional-variables.json) with appropriate values.
 
 ```bash
-cd examples/ddcloud/private_ipv4
-export MCP_USERNAME=my_username
-export MCP_PASSWORD=my_password
+cd examples/aws
+export AWS_ACCESS_KEY_ID=my_access_key_id
+export AWS_SECRET_KEY=my_secret_key
 docker-machine create --driver terraform \
 	--terraform-config $PWD/main.tf \
 	--terraform-additional-variables $PWD/additional-variables.json \
-	hello-ddcloud
+	hello-aws
 ```
 
 ### Artefacts
 
 This configuration produces:
 
-* `ddcloud_server.docker_machine` - The Docker host
+* `aws_instance.docker_machine` - The Docker host
+* `aws_security_group.docker_machine` - The network security group
