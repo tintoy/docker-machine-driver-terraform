@@ -5,16 +5,12 @@ import (
 )
 
 // Apply invokes Terraform's "apply" command.
-func (terraformer *Terraformer) Apply(withVariablesFile bool) (success bool, err error) {
-	args := []string{
+func (terraformer *Terraformer) Apply() (success bool, err error) {
+	success, err = terraformer.RunStreamed("apply",
 		"-input=false", // non-interactive
 		"-no-color",
-	}
-	if withVariablesFile {
-		args = append(args, "-var-file=tfvars.json")
-	}
-
-	success, err = terraformer.RunStreamed("apply", args...)
+		"-var-file=tfvars.json",
+	)
 	if err != nil {
 		return
 	}

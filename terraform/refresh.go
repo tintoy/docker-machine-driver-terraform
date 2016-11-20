@@ -6,18 +6,12 @@ import (
 )
 
 // Refresh invokes Terraform's "refresh" command.
-func (terraformer *Terraformer) Refresh(variablesFilePath string) error {
-	args := []string{
+func (terraformer *Terraformer) Refresh() error {
+	success, programOutput, err := terraformer.Run("refresh",
 		"-input=false", // non-interactive
 		"-no-color",
-	}
-	if variablesFilePath != "" {
-		args = append(args,
-			fmt.Sprintf("-var-file=%s", variablesFilePath),
-		)
-	}
-
-	success, programOutput, err := terraformer.Run("refresh", args...)
+		"-var-file=tfvars.json",
+	)
 	log.Print(programOutput)
 	if err != nil {
 		return err

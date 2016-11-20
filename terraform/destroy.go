@@ -5,16 +5,12 @@ import (
 )
 
 // Destroy invokes Terraform's "destroy" command.
-func (terraformer *Terraformer) Destroy(withVariablesFile bool) (success bool, err error) {
-	args := []string{
-		"-force", "-input=false", // non-interactive
+func (terraformer *Terraformer) Destroy() (success bool, err error) {
+	success, err = terraformer.RunStreamed("destroy",
+		"-input=false", // non-interactive
 		"-no-color",
-	}
-	if withVariablesFile {
-		args = append(args, "-var-file=tfvars.json")
-	}
-
-	success, err = terraformer.RunStreamed("destroy", args...)
+		"-var-file=tfvars.json",
+	)
 	if err != nil {
 		return
 	}

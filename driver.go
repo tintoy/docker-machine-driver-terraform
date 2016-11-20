@@ -190,7 +190,7 @@ func (driver *Driver) Create() error {
 		return err
 	}
 
-	success, err := terraformer.Apply(true /* withVariablesFile */)
+	success, err := terraformer.Apply()
 	if err != nil {
 		return err
 	}
@@ -248,7 +248,7 @@ func (driver *Driver) Remove() error {
 		return err
 	}
 
-	success, err := terraformer.Destroy(true /* withVariablesFile */)
+	success, err := terraformer.Destroy()
 	if err != nil {
 		return err
 	}
