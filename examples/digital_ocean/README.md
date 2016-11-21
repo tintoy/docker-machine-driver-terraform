@@ -21,7 +21,7 @@ export DIGITALOCEAN_TOKEN=my_token
 cd examples/digital_ocean
 docker-machine create --driver terraform \
 	--terraform-config $PWD/main.tf \
-	--terraform-additional-variables $PWD/additional-variables.json \
+	--terraform-variables-from $PWD/additional-variables.json \
 	hello-digital-ocean
 ```
 

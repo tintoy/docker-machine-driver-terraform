@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"strings"
 
 	"github.com/docker/machine/libmachine/log"
 )
@@ -49,8 +50,38 @@ func (driver *Driver) readVariables() error {
 	return nil
 }
 
-// Read Terraform variables from the additional variables file passed in on the command-line.
+// Read all additional variables (from the command line, or from a file)
 func (driver *Driver) readAdditionalVariables() error {
+	err := driver.readAdditionalVariablesInline()
+	if err != nil {
+		return err
+	}
+
+	return driver.readAdditionalVariablesFile()
+}
+
+// Read additional variables passed in on the command-line (--terraform-variable a=b --terraform-variable c=d)
+func (driver *Driver) readAdditionalVariablesInline() error {
+	for _, additionalVariable := range driver.AdditionalVariablesInline {
+		variableNameAndValue := strings.SplitN(additionalVariable, "=", 2)
+		if len(variableNameAndValue) != 2 {
+			return fmt.Errorf("Invalid format for additional variable '%s", additionalVariable)
+		}
+
+		// Don't overwrite existing entries.
+		_, variableExists := driver.ConfigVariables[variableNameAndValue[0]]
+		if variableExists {
+			continue
+		}
+
+		driver.ConfigVariables[variableNameAndValue[0]] = variableNameAndValue[1]
+	}
+
+	return nil
+}
+
+// Read Terraform variables from the file passed in on the command-line.
+func (driver *Driver) readAdditionalVariablesFile() error {
 	if driver.AdditionalVariablesFile == "" {
 		return nil // Nothing to do
 	}

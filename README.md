@@ -10,7 +10,9 @@ Well now you do. If you can express it as a Terraform configuration, you can use
 The driver accepts the following arguments:
 
 * `--terraform-config` (Required) - The path (or URL) of the Terraform configuration to use
-* `--terraform-additional-variables` (Optional) - An optional file containing the JSON that represents additional variables for the Terraform configuration
+* `--terraform-variable` (Optional) - One or more items of the form "name=value" representing additional variables for the Terraform configuration  
+For example: `--terraform-variable variable1=foo --terraform-variable variable2=bar`
+* `--terraform-variables-from` (Optional) - An optional file containing the JSON that represents additional variables for the Terraform configuration
 * `--terraform-refresh` (Optional) - A flag which, if specified, will cause the driver to refresh the configuration after applying it
 
 ### Terraform configuration

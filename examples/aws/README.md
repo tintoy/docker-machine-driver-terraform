@@ -25,7 +25,7 @@ export AWS_ACCESS_KEY_ID=my_access_key_id
 export AWS_SECRET_KEY=my_secret_key
 docker-machine create --driver terraform \
 	--terraform-config $PWD/main.tf \
-	--terraform-additional-variables $PWD/additional-variables.json \
+	--terraform-additional-variables-file $PWD/additional-variables.json \
 	hello-aws
 ```
 

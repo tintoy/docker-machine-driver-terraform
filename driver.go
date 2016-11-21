@@ -36,6 +36,9 @@ type Driver struct {
 	// An optional file containing the JSON that represents additional variables for the Terraform configuration
 	AdditionalVariablesFile string
 
+	// Optional "name=value" items that represent additional variables for the Terraform configuration
+	AdditionalVariablesInline []string
+
 	// Refresh the configuration after applying it
 	RefreshAfterApply bool
 
@@ -60,9 +63,14 @@ func (driver *Driver) GetCreateFlags() []mcnflag.Flag {
 			Usage: "The path (or URL) of the Terraform configuration",
 			Value: "",
 		},
+		mcnflag.StringSliceFlag{
+			Name:  "terraform-variable",
+			Usage: "Additional variable(s) for the Terraform configuration (in the form name=value)",
+			Value: []string{},
+		},
 		mcnflag.StringFlag{
-			Name:  "terraform-additional-variables",
-			Usage: "An optional file containing the JSON that represents additional variables for the Terraform configuration",
+			Name:  "terraform-variables-from",
+			Usage: "The name of a file containing the JSON that represents additional variables for the Terraform configuration",
 			Value: "",
 		},
 		mcnflag.BoolFlag{
@@ -106,7 +114,10 @@ func (driver *Driver) SetConfigFromFlags(flags drivers.DriverOptions) error {
 
 	driver.ConfigSource = flags.String("terraform-config")
 	driver.ConfigVariables = make(map[string]interface{})
-	driver.AdditionalVariablesFile = flags.String("terraform-additional-variables")
+
+	driver.AdditionalVariablesInline = flags.StringSlice("terraform-variable")
+	driver.AdditionalVariablesFile = flags.String("terraform-variables")
+
 	driver.RefreshAfterApply = flags.Bool("terraform-refresh")
 
 	driver.SSHPort = flags.Int("terraform-ssh-port")

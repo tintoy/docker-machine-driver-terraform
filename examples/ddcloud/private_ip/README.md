@@ -30,7 +30,7 @@ export MCP_USERNAME=my_username
 export MCP_PASSWORD=my_password
 docker-machine create --driver terraform \
 	--terraform-config $PWD/main.tf \
-	--terraform-additional-variables $PWD/additional-variables.json \
+	--terraform-variables-from $PWD/additional-variables.json \
 	hello-ddcloud
 ```
 
