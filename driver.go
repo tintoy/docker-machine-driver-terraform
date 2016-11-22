@@ -116,7 +116,7 @@ func (driver *Driver) SetConfigFromFlags(flags drivers.DriverOptions) error {
 	driver.ConfigVariables = make(map[string]interface{})
 
 	driver.AdditionalVariablesInline = flags.StringSlice("terraform-variable")
-	driver.AdditionalVariablesFile = flags.String("terraform-variables")
+	driver.AdditionalVariablesFile = flags.String("terraform-variables-from")
 
 	driver.RefreshAfterApply = flags.Bool("terraform-refresh")
 
