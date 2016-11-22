@@ -173,6 +173,12 @@ func (driver *Driver) PreCreateCheck() error {
 		}
 	}
 
+	log.Debugf("Generating one-time password...")
+	driver.ConfigVariables["dm_onetime_password"], err = driver.generateOneTimePassword()
+	if err != nil {
+		return err
+	}
+
 	log.Infof("Customising terraform configuration...")
 	driver.ConfigVariables["dm_client_ip"] = clientIP
 	driver.ConfigVariables["dm_machine_name"] = driver.MachineName
@@ -180,10 +186,12 @@ func (driver *Driver) PreCreateCheck() error {
 	driver.ConfigVariables["dm_ssh_public_key_file"] = driver.SSHKeyPath + ".pub"
 	driver.ConfigVariables["dm_ssh_user"] = driver.SSHUser
 	driver.ConfigVariables["dm_ssh_port"] = driver.SSHPort
+
 	err = driver.readAdditionalVariables()
 	if err != nil {
 		return err
 	}
+
 	err = driver.writeVariables()
 	if err != nil {
 		return err
