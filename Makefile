@@ -6,7 +6,7 @@ REPO_BASE = github.com/tintoy/docker-machine-driver-terraform
 default: fmt build test
 
 fmt:
-	go fmt github.com/tintoy/docker-machine-driver-terraform/...
+	go fmt $(REPO_BASE)/...
 
 # Peform a development (current-platform-only) build.
 dev: version fmt
@@ -16,10 +16,13 @@ install: dev
 	go install
 
 # Perform a full (all-platforms) build.
-build: version build-windows64 build-linux64 build-mac64
+build: version build-windows64 build-windows32 build-linux64 build-mac64
 
 build-windows64:
 	GOOS=windows GOARCH=amd64 go build -o _bin/windows-amd64/docker-machine-driver-terraform.exe
+
+build-windows32:
+	GOOS=windows GOARCH=386 go build -o _bin/windows-386/docker-machine-driver-terraform.exe
 
 build-linux64:
 	GOOS=linux GOARCH=amd64 go build -o _bin/linux-amd64/docker-machine-driver-terraform
@@ -29,9 +32,14 @@ build-mac64:
 
 # Produce archives for a GitHub release.
 dist: build
-	zip -9 _bin/windows-amd64.zip _bin/windows-amd64/docker-machine-driver-terraform.exe
-	zip -9 _bin/linux-amd64.zip _bin/linux-amd64/docker-machine-driver-terraform
-	zip -9 _bin/darwin-amd64.zip _bin/darwin-amd64/docker-machine-driver-terraform
+	cd _bin/windows-386 && \
+		zip -9 ../windows-386.zip docker-machine-driver-terraform.exe
+	cd _bin/windows-amd64 && \
+		zip -9 ../windows-amd64.zip docker-machine-driver-terraform.exe
+	cd _bin/linux-amd64 && \
+		zip -9 ../linux-amd64.zip docker-machine-driver-terraform
+	cd _bin/darwin-amd64 && \
+		zip -9 ../darwin-amd64.zip docker-machine-driver-terraform
 
 test: fmt
 	go test -v $(REPO_BASE) $(REPO_BASE)/fetch $(REPO_BASE)/terraform
