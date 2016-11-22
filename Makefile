@@ -1,6 +1,8 @@
 VERSION = 0.3
 VERSION_INFO_FILE = version-info.go
 
+REPO_BASE = github.com/tintoy/docker-machine-driver-terraform
+
 default: fmt build test
 
 fmt:
@@ -32,7 +34,7 @@ dist: build
 	zip -9 _bin/darwin-amd64.zip _bin/darwin-amd64/docker-machine-driver-terraform
 
 test: fmt
-	go test -v github.com/tintoy/docker-machine-driver-terraform/...
+	go test -v $(REPO_BASE) $(REPO_BASE)/fetch $(REPO_BASE)/terraform
 
 version: $(VERSION_INFO_FILE)
 
