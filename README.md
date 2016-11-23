@@ -57,6 +57,13 @@ Here are some [examples](examples) for several different providers:
 * Azure  
 Still to be implemented
 
+#### Rancher
+
+Yes you can use this driver with Rancher :)
+
+Unfortunately, at the moment it works best via the Rancher API because I haven't built a custom UI for it, so you may have issues supplying variable values to it (unless you can place the variables file in a folder on the rancher server).
+Eventually, the [custom UI plugin](https://github.com/tintoy/rancher-ui-driver-terraform#readme) will enable you to add and remove variables as required. 
+
 ## Installing the driver
 
 Download the [latest release](https://github.com/tintoy/docker-machine-driver-terraform/releases) and place the provider executable in the same directory as `docker-machine` executable (or somewhere on your `PATH`).
