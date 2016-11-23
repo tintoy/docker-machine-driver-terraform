@@ -3,6 +3,8 @@
 Do you use Docker Machine?
 Do you sometimes wish you had a little more control over the infrastructure it creates?
 
+[![asciicast](https://asciinema.org/a/93410.png)](https://asciinema.org/a/93410)
+
 Well now you do. If you can express it as a Terraform configuration, you can use it from Docker Machine.
 
 ### Arguments
