@@ -5,7 +5,7 @@ Do you sometimes wish you had a little more control over the infrastructure it c
 
 Well now you do :)
 
-[![asciicast](https://asciinema.org/a/93410.png)](https://asciinema.org/a/93410)
+[![asciicast](docs/images/screencast.png)](https://asciinema.org/a/93410)
 
 If you can express it as a Terraform configuration, you can use it from Docker Machine.
 
